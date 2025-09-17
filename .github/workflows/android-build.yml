@@ -39,7 +39,21 @@ jobs:
 
       - name: Build APK
         run: |
-          buildozer android debug
+          # First run initializes .buildozer and downloads the SDK skeleton
+          set -o pipefail
+          buildozer android debug || true
+
+          # Accept all licenses using the sdkmanager that Buildozer installed
+          yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+          # Install pinned, stable Android components to avoid preview/RC build-tools
+          ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;33.0.2"
+
+          # Now perform the actual build with verbose logs
+          buildozer -v android debug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
